@@ -1,19 +1,107 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Button Test</title>
+    <title>User Role Assignment Test</title>
     <script>
-        function sendButtonPress() {
-            fetch("http://localhost:2003/button-press", {
-                method: "POST"
-            })
-            .then(response => response.text())
-            .then(data => console.log(data))
-            .catch(error => console.error('Error:', error));
+        const backendUrl = "https://your-ngrok-id.ngrok.io"; // Replace with your ngrok URL
+
+        // Generate or retrieve UUID
+        let uuid = localStorage.getItem('uuid');
+        if (!uuid) {
+            uuid = self.crypto.randomUUID();
+            localStorage.setItem('uuid', uuid);
         }
+
+        let role = null;
+
+        // Register user
+        async function registerUser() {
+            try {
+                const response = await fetch(`${backendUrl}/register`, {
+                    method: "POST",
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ uuid: uuid })
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    role = data.role;
+                    updateRoleDisplay();
+                    console.log(`Assigned role: ${role}`);
+                } else {
+                    const errorText = await response.text();
+                    console.error('Registration failed:', errorText);
+                    alert('Registration failed: ' + errorText);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        // Heartbeat mechanism
+        function startHeartbeat() {
+            setInterval(async () => {
+                try {
+                    await fetch(`${backendUrl}/heartbeat`, {
+                        method: "POST",
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ uuid: uuid })
+                    });
+                } catch (error) {
+                    console.error('Heartbeat error:', error);
+                }
+            }, 10000); // Every 10 seconds
+        }
+
+        // Handle button press
+        async function sendButtonPress() {
+            if (!role) {
+                alert('Role not assigned yet.');
+                return;
+            }
+            try {
+                const response = await fetch(`${backendUrl}/button-press`, {
+                    method: "POST",
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ uuid: uuid, role: role })
+                });
+                if (response.ok) {
+                    const data = await response.text();
+                    console.log(data);
+                } else {
+                    const errorText = await response.text();
+                    console.error('Button press failed:', errorText);
+                    alert('Button press failed: ' + errorText);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        // Update role display
+        function updateRoleDisplay() {
+            const roleDisplay = document.getElementById('role-display');
+            if (role) {
+                roleDisplay.textContent = role;
+            } else {
+                roleDisplay.textContent = 'Not assigned';
+            }
+        }
+
+        window.onload = function() {
+            startHeartbeat(); // Start heartbeat as soon as the page loads
+        };
     </script>
 </head>
 <body>
+    <h1>User Role Assignment Test</h1>
+    <p>Your role: <span id="role-display">Not assigned</span></p>
+    <button onclick="registerUser()">Get Assigned Role</button>
     <button onclick="sendButtonPress()">Press Me</button>
 </body>
 </html>
