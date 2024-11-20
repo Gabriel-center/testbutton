@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Button Test</title>
+    <script>
+        function sendButtonPress() {
+            fetch("http://localhost:2003/button-press", {
+                method: "POST"
+            })
+            .then(response => response.text())
+            .then(data => console.log(data))
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
+</head>
+<body>
+    <button onclick="sendButtonPress()">Press Me</button>
+</body>
+</html>
